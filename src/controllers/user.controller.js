@@ -103,52 +103,63 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
   // req body-> data
-  //username or email
-  // find the user
-  // password check
-  // access and refresh token
-  // aend cookies
-
   const { email, username, password } = req.body;
+
+  // Ensure either email or username is provided
   if (!(username || email)) {
-    throw new ApiError(400, "username or email  is requird");
+    throw new ApiError(400, "Username or email is required");
   }
+
+  // Find the user by username or email
   const user = await User.findOne({
     $or: [{ username }, { email }],
   });
+
+  // If the user is not found
   if (!user) {
-    throw new ApiError(404, "USer does not exist");
+    throw new ApiError(404, "User does not exist");
   }
 
+  // Check if the provided password is correct
   const isPasswordValid = await user.isPasswordCorrect(password);
+
+  // If the password is incorrect
   if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid user Credential");
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-      user._id,
-    );
-    const loggedInUser = await User.findById(user._id).select(
-      "-password -rereshToken",
-    );
-    const options = {
-      httpOnly: true,
-      secure: true,
-    };
-    return res
-      .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            user: loggedInUser,
-            accessToken,
-            refreshToken,
-          },
-          "User logged In SucessFully",
-        ),
-      );
+    throw new ApiError(401, "Invalid user credentials");
   }
+
+  // If the password is correct, generate access and refresh tokens
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id,
+  );
+
+  // Get the logged-in user info, excluding sensitive fields
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken",
+  );
+
+  // Options for secure cookies
+  const options = {
+    httpOnly: true,
+    secure: true, // Secure is typically true in production when using HTTPS
+  };
+
+  // Return response with access and refresh tokens in cookies, and user info in JSON
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "User logged in successfully",
+      ),
+    );
 });
 
 const logoutUser = asyncHandler(async (req, resp) => {

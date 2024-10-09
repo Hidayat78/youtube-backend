@@ -55,33 +55,37 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+// Password validation method
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
-userSchema.method.generateAccessToken = function () {
-  return (
-    jwt.sign({
+
+// Access token generation method
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign(
+    {
       _id: this._id,
       email: this.email,
       username: this.username,
       fullName: this.fullName,
-    }),
+    },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-    }
-  );
-};
-userSchema.method.generateRefreshToken = function () {
-  return (
-    jwt.sign({
-      _id: this._id,
-    }),
-    process.env.REFRESH_TOKEN_SECRET,
-    {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
-    }
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY, // e.g., '15m'
+    },
   );
 };
 
+// Refresh token generation method
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY, // e.g., '7d'
+    },
+  );
+};
 export const User = mongoose.model("User", userSchema);

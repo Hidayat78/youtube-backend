@@ -35,5 +35,20 @@ const uploadOnCloudinary = async (localFilePath) => {
     throw new ApiError(500, "Failed to upload file to Cloudinary");
   }
 };
+// Function to delete files from Cloudinary
+const deleteFromCloudinary = async (avatarUrl) => {
+  try {
+    // Extract the public ID from the URL (Cloudinary's format usually includes it)
+    const publicId = avatarUrl.split("/").pop().split(".")[0]; // Simplified approach
 
-export { uploadOnCloudinary };
+    const response = await cloudinary.uploader.destroy(publicId);
+
+    console.log("Cloudinary Delete Response:", response);
+    return response;
+  } catch (error) {
+    console.error("Cloudinary Deletion Error:", error);
+    throw new ApiError(500, "Failed to delete old avatar from Cloudinary");
+  }
+};
+
+export { uploadOnCloudinary, deleteFromCloudinary };
